@@ -3,7 +3,7 @@ Cloud Toolkit Import Agent is library for development purpose. It allows you to 
 
 ## Usage
 ### Add dependency to your maven pom file. 
-
+```xml
     <dependencies>
         ...
         <dependency>
@@ -13,9 +13,11 @@ Cloud Toolkit Import Agent is library for development purpose. It allows you to 
         </dependency>
         ...
     </dependencies>
+```
     
 We recommend to add dependency only to for local development otherwise _/import_ servlet will be exposed to your test/production server:
- 
+
+```xml
     <profile>
         <id>development</id>
         <dependencies>
@@ -28,10 +30,11 @@ We recommend to add dependency only to for local development otherwise _/import_
         </dependencies>
             ...
     </profile>
+```
      
 ### Guice - install modules
 To install guice agent modules copy code below to your guice module configuration:
-
+```java
     package com.foo.bar;
 
     import com.google.appengine.api.utils.SystemProperty;
@@ -76,7 +79,8 @@ To install guice agent modules copy code below to your guice module configuratio
             );
         }
     }
-    
+```
+        
 ## Writing of changesets
 Create files _changeset_0000#.xml_ under _${project.root}/src/main/resources/dataset_ directory:
     
@@ -88,6 +92,7 @@ Create files _changeset_0000#.xml_ under _${project.root}/src/main/resources/dat
 
 Put following code inside changest_00001.xml:
 
+```xml
     <changeset author="john.foo@bar.org" comment="Init data for country">
         <entities>
             <entity id="1" kind="Country">
@@ -96,7 +101,7 @@ Put following code inside changest_00001.xml:
             </entity>
         </entities>
     </changeset>
-
+```
 
 Note: Each changeset is running in separate queue task concurrently so ordering of changesets is only informal.
 
@@ -114,7 +119,7 @@ You can create ID of entity as follows:
 - by _id_ property - long value
 - by _name_ property - string value
 
-
+```xml
     <entity id="1" kind="Country">
         ...
     </entity>
@@ -122,11 +127,13 @@ You can create ID of entity as follows:
     <entity name="EN" kind="Country">
         ...
     </entity>
+```
     
 You can create parent key of entity as follows:
 - by _key_ property - entity parent. For example for Contact of User you create key by _Contact:1::User:10_
 
-
+```xml
     <entity id="1" kind="Country">
         <property name="continent" type="key" value="Continent:ASIA"/> 
     </entity>    
+```
