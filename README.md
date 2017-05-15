@@ -115,12 +115,10 @@ You can create ID of entity as follows:
 - by _name_ property - string value
 
 
-    <!-- ID by long value -->
     <entity id="1" kind="Country">
         ...
     </entity>
-    
-    <!-- ID by string value -->
+
     <entity name="EN" kind="Country">
         ...
     </entity>
@@ -128,8 +126,7 @@ You can create ID of entity as follows:
 You can create parent key of entity as follows:
 - by _key_ property - entity parent. For example for Contact of User you create key by _Contact:1::User:10_
 
-    
-    <!-- Relations -->
+
     <entity id="1" kind="Country">
         <property name="continent" type="key" value="Continent:ASIA"/> 
     </entity>    
