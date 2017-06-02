@@ -82,6 +82,12 @@
             <artifactId>javax.inject</artifactId>
         </dependency>
 
+        <!-- SERVLET API DEPENDENCY -->
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>servlet-api</artifactId>
+        </dependency>
+
         <!-- AppEngine test scope -->
         <dependency>
             <groupId>com.google.appengine</groupId>
@@ -105,11 +111,8 @@
             <groupId>com.google.inject.extensions</groupId>
             <artifactId>guice-servlet</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.google.inject.extensions</groupId>
-            <artifactId>guice-assistedinject</artifactId>
-        </dependency>
 
+        <!-- LOGGING DEPENDENCIES -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
@@ -136,6 +139,7 @@
             <groupId>org.ctoolkit.test</groupId>
             <artifactId>ctoolkit-test</artifactId>
             <version>1.2</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>cpsuite</groupId>
