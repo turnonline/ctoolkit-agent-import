@@ -21,7 +21,6 @@ package org.ctoolkit.agent.service.impl;
 import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.google.appengine.api.datastore.ShortBlob;
 import com.google.appengine.api.datastore.Text;
 import com.google.appengine.repackaged.com.google.api.client.util.Base64;
 import org.ctoolkit.agent.resource.ChangeSetEntityProperty;
@@ -29,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -57,19 +55,34 @@ public class EntityEncoder
         }
         if ( ChangeSetEntityProperty.PROPERTY_TYPE_STRING.equals( type ) )
         {
-            return value;
+            return new ValueResolver()
+            {
+                @Override
+                Object toValue( String value )
+                {
+                    // if string is bigger than 1500 bytes create Text object instead
+                    if ( value.getBytes().length > 1500 )
+                    {
+                        return new Text( value );
+                    }
+                    return value;
+                }
+            }.resolve( value );
         }
         else if ( ChangeSetEntityProperty.PROPERTY_TYPE_DOUBLE.equals( type ) )
         {
             return Double.valueOf( value );
         }
-        else if ( ChangeSetEntityProperty.PROPERTY_TYPE_FLOAT.equals( type ) )
+        else if ( ChangeSetEntityProperty.PROPERTY_TYPE_LONG.equals( type ) )
         {
-            return Float.valueOf( value );
-        }
-        else if ( ChangeSetEntityProperty.PROPERTY_TYPE_INTEGER.equals( type ) )
-        {
-            return Integer.valueOf( value );
+            return new ValueResolver()
+            {
+                @Override
+                Object toValue( String value )
+                {
+                    return Long.valueOf( value );
+                }
+            }.resolve( value );
         }
         else if ( ChangeSetEntityProperty.PROPERTY_TYPE_BOOLEAN.equals( type ) )
         {
@@ -78,22 +91,6 @@ public class EntityEncoder
         else if ( ChangeSetEntityProperty.PROPERTY_TYPE_DATE.equals( type ) )
         {
             return new Date( Long.valueOf( value ) );
-        }
-        else if ( ChangeSetEntityProperty.PROPERTY_TYPE_LONG.equals( type ) )
-        {
-            return Long.valueOf( value );
-        }
-        else if ( ChangeSetEntityProperty.PROPERTY_TYPE_SHORTBLOB.equals( type ) )
-        {
-            try
-            {
-                return new ShortBlob( Base64.decodeBase64( value ) );
-            }
-            catch ( Exception e )
-            {
-                logger.error( "Error by encoding short blob: '" + value + "'" );
-                return null;
-            }
         }
         else if ( ChangeSetEntityProperty.PROPERTY_TYPE_BLOB.equals( type ) )
         {
@@ -107,59 +104,16 @@ public class EntityEncoder
                 return null;
             }
         }
-        else if ( ChangeSetEntityProperty.PROPERTY_TYPE_KEY.equals( type ) )
+        else if ( ChangeSetEntityProperty.PROPERTY_TYPE_REFERENCE.equals( type ) )
         {
-            return parseKeyByIdOrName( value );
-        }
-        else if ( ChangeSetEntityProperty.PROPERTY_TYPE_KEY_NAME.equals( type ) )
-        {
-            return parseKeyNames( value );
-        }
-        else if ( ChangeSetEntityProperty.PROPERTY_TYPE_TEXT.equals( type ) )
-        {
-            return new Text( value );
-        }
-        else if ( ChangeSetEntityProperty.PROPERTY_TYPE_LIST_LONG.equals( type ) )
-        {
-            List<Long> list = new ArrayList<>();
-            for ( String s : value.split( "," ) )
+            return new ValueResolver()
             {
-                try
+                @Override
+                Object toValue( String value )
                 {
-                    list.add( Long.valueOf( s ) );
+                    return parseKeyByIdOrName( value );
                 }
-                catch ( NumberFormatException e )
-                {
-                    logger.error( "Unable to convert value to long: '" + s + "'" );
-                }
-            }
-
-            return list;
-        }
-        else if ( ChangeSetEntityProperty.PROPERTY_TYPE_LIST_ENUM.equals( type ) )
-        {
-            List<String> list = new ArrayList<>();
-            Collections.addAll( list, value.split( "," ) );
-
-            return list;
-        }
-        else if ( ChangeSetEntityProperty.PROPERTY_TYPE_LIST_STRING.equals( type ) )
-        {
-            List<String> list = new ArrayList<>();
-            Collections.addAll( list, value.split( "," ) );
-
-            return list;
-        }
-        else if ( ChangeSetEntityProperty.PROPERTY_TYPE_LIST_KEY.equals( type ) )
-        {
-            List<Key> list = new ArrayList<>();
-
-            for ( String fullKey : value.split( "," ) )
-            {
-                list.add( parseKeyByIdOrName( fullKey ) );
-            }
-
-            return list;
+            }.resolve( value );
         }
 
         logger.error( "Unknown entity type '" + type + "'" );
@@ -213,30 +167,27 @@ public class EntityEncoder
         return parentKey;
     }
 
-    private Key parseKeyNames( String stringKey )
+    private static abstract class ValueResolver
     {
-        String[] split = stringKey.trim().split( "::" );
-
-        String kind;
-        String name;
-        Key parentKey = null;
-
-        for ( String s : split )
+        Object resolve( String value )
         {
-            String[] spl = s.split( ":" );
-            kind = spl[0].trim();
-            name = spl[1].trim();
-
-            if ( parentKey == null )
+            if ( value.contains( "," ) )
             {
-                parentKey = KeyFactory.createKey( kind, name );
+                List<Object> list = new ArrayList<>();
+
+                for ( String splitValue : value.split( "," ) )
+                {
+                    list.add( toValue( splitValue ) );
+                }
+
+                return list;
             }
             else
             {
-                parentKey = KeyFactory.createKey( parentKey, kind, name );
+                return toValue( value );
             }
         }
 
-        return parentKey;
+        abstract Object toValue( String value );
     }
 }

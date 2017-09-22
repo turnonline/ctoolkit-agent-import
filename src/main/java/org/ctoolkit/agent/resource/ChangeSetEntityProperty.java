@@ -43,11 +43,7 @@ public class ChangeSetEntityProperty
      */
     public static final String PROPERTY_TYPE_STRING = "string";
 
-    public static final String PROPERTY_TYPE_FLOAT = "float";
-
     public static final String PROPERTY_TYPE_DOUBLE = "double";
-
-    public static final String PROPERTY_TYPE_INTEGER = "int";
 
     public static final String PROPERTY_TYPE_LONG = "long";
 
@@ -55,25 +51,11 @@ public class ChangeSetEntityProperty
 
     public static final String PROPERTY_TYPE_BOOLEAN = "boolean";
 
-    public static final String PROPERTY_TYPE_SHORTBLOB = "shortblob";
-
     public static final String PROPERTY_TYPE_BLOB = "blob";
 
     public static final String PROPERTY_TYPE_NULL = "null";
 
-    public static final String PROPERTY_TYPE_KEY = "key";
-
-    public static final String PROPERTY_TYPE_KEY_NAME = "key-name";
-
-    public static final String PROPERTY_TYPE_TEXT = "text";
-
-    public static final String PROPERTY_TYPE_LIST_KEY = "list-key";
-
-    public static final String PROPERTY_TYPE_LIST_LONG = "list-long";
-
-    public static final String PROPERTY_TYPE_LIST_ENUM = "list-enum";
-
-    public static final String PROPERTY_TYPE_LIST_STRING = "list-string";
+    public static final String PROPERTY_TYPE_REFERENCE = "reference";
 
     @XmlAttribute( name = "name" )
     private String name;
