@@ -63,11 +63,11 @@ public class ChangeSetEntityToEntityMapper
             {
                 if ( null == prop.getValue() )
                 {
-                    entity.setProperty( prop.getName(), encoder.decodeProperty( prop.getType(), null ) );
+                    entity.setProperty( prop.getName(), encoder.decodeProperty( prop.getType(), prop.getMultiplicity(), null ) );
                 }
                 else
                 {
-                    entity.setProperty( prop.getName(), encoder.decodeProperty( prop.getType(), prop.getValue() ) );
+                    entity.setProperty( prop.getName(), encoder.decodeProperty( prop.getType(), prop.getMultiplicity(), prop.getValue() ) );
                 }
             }
         }

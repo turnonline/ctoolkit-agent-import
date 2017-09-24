@@ -43,11 +43,12 @@ public class EntityEncoder
     /**
      * Transforms a type and a string value to real object with given type and value.
      *
-     * @param type  the type of the property
-     * @param value the string represented value of the property
+     * @param type         the type of the property
+     * @param multiplicity multiplicity of property
+     * @param value        the string represented value of the property
      * @return ChangeSetEntityProperty representation of the property
      */
-    public Object decodeProperty( String type, String value )
+    public Object decodeProperty( String type, String multiplicity, String value )
     {
         if ( value == null )
         {
@@ -67,11 +68,18 @@ public class EntityEncoder
                     }
                     return value;
                 }
-            }.resolve( value );
+            }.resolve( value, multiplicity );
         }
         else if ( ChangeSetEntityProperty.PROPERTY_TYPE_DOUBLE.equals( type ) )
         {
-            return Double.valueOf( value );
+            return new ValueResolver()
+            {
+                @Override
+                Object toValue( String value )
+                {
+                    return Double.valueOf( value );
+                }
+            }.resolve( value, multiplicity );
         }
         else if ( ChangeSetEntityProperty.PROPERTY_TYPE_LONG.equals( type ) )
         {
@@ -82,27 +90,48 @@ public class EntityEncoder
                 {
                     return Long.valueOf( value );
                 }
-            }.resolve( value );
+            }.resolve( value, multiplicity );
         }
         else if ( ChangeSetEntityProperty.PROPERTY_TYPE_BOOLEAN.equals( type ) )
         {
-            return Boolean.valueOf( value );
+            return new ValueResolver()
+            {
+                @Override
+                Object toValue( String value )
+                {
+                    return Boolean.valueOf( value );
+                }
+            }.resolve( value, multiplicity );
         }
         else if ( ChangeSetEntityProperty.PROPERTY_TYPE_DATE.equals( type ) )
         {
-            return new Date( Long.valueOf( value ) );
+            return new ValueResolver()
+            {
+                @Override
+                Object toValue( String value )
+                {
+                    return new Date( Long.valueOf( value ) );
+                }
+            }.resolve( value, multiplicity );
         }
         else if ( ChangeSetEntityProperty.PROPERTY_TYPE_BLOB.equals( type ) )
         {
-            try
+            return new ValueResolver()
             {
-                return new Blob( Base64.decodeBase64( value ) );
-            }
-            catch ( Exception e )
-            {
-                logger.error( "Error by encoding blob: '" + value + "'" );
-                return null;
-            }
+                @Override
+                Object toValue( String value )
+                {
+                    try
+                    {
+                        return new Blob( Base64.decodeBase64( value ) );
+                    }
+                    catch ( Exception e )
+                    {
+                        logger.error( "Error by encoding blob: '" + value + "'" );
+                        return null;
+                    }
+                }
+            }.resolve( value, multiplicity );
         }
         else if ( ChangeSetEntityProperty.PROPERTY_TYPE_REFERENCE.equals( type ) )
         {
@@ -113,7 +142,7 @@ public class EntityEncoder
                 {
                     return parseKeyByIdOrName( value );
                 }
-            }.resolve( value );
+            }.resolve( value, multiplicity );
         }
 
         logger.error( "Unknown entity type '" + type + "'" );
@@ -169,9 +198,9 @@ public class EntityEncoder
 
     private static abstract class ValueResolver
     {
-        Object resolve( String value )
+        Object resolve( String value, String multiplicity )
         {
-            if ( value.contains( "," ) )
+            if ( multiplicity != null && multiplicity.equals( ChangeSetEntityProperty.PROPERTY_MULTIPLICITY_LIST ) )
             {
                 List<Object> list = new ArrayList<>();
 

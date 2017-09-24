@@ -57,11 +57,18 @@ public class ChangeSetEntityProperty
 
     public static final String PROPERTY_TYPE_REFERENCE = "reference";
 
+    public static final String PROPERTY_MULTIPLICITY_SINGLE = "single";
+
+    public static final String PROPERTY_MULTIPLICITY_LIST = "list";
+
     @XmlAttribute( name = "name" )
     private String name;
 
     @XmlAttribute( name = "type" )
     private String type;
+
+    @XmlAttribute( name = "multiplicity" )
+    private String multiplicity;
 
     @XmlAttribute( name = "value" )
     private String value;
@@ -77,6 +84,7 @@ public class ChangeSetEntityProperty
     {
         setName( other.getName() );
         setType( other.getType() );
+
         setValue( other.getValue() );
     }
 
@@ -114,6 +122,16 @@ public class ChangeSetEntityProperty
         this.type = type;
     }
 
+    public String getMultiplicity()
+    {
+        return multiplicity;
+    }
+
+    public void setMultiplicity( String multiplicity )
+    {
+        this.multiplicity = multiplicity;
+    }
+
     public String getValue()
     {
         return value;
@@ -130,6 +148,7 @@ public class ChangeSetEntityProperty
         return "ChangeSetEntityProperty{" +
                 "name='" + name + '\'' +
                 ", type='" + type + '\'' +
+                ", multiplicity='" + multiplicity + '\'' +
                 ", value='" + value + '\'' +
                 '}';
     }
