@@ -45,7 +45,7 @@ public class ChangeSetEntityToEntityMapper
         this.encoder = encoder;
     }
 
-    public Entity map( ChangeSetEntity changeSetEntity)
+    public Entity map( ChangeSetEntity changeSetEntity )
     {
         // the kind has to be specified
         if ( changeSetEntity.getKind() == null )
@@ -61,13 +61,23 @@ public class ChangeSetEntityToEntityMapper
         {
             for ( ChangeSetEntityProperty prop : changeSetEntity.getProperty() )
             {
-                if ( null == prop.getValue() )
+                Boolean indexed = prop.getIndexed();
+                Object value = encoder.decodeProperty( prop.getType(), prop.getMultiplicity(), prop.getValue() );
+
+                if ( indexed == null )
                 {
-                    entity.setProperty( prop.getName(), encoder.decodeProperty( prop.getType(), prop.getMultiplicity(), null ) );
+                    entity.setProperty( prop.getName(), value );
                 }
                 else
                 {
-                    entity.setProperty( prop.getName(), encoder.decodeProperty( prop.getType(), prop.getMultiplicity(), prop.getValue() ) );
+                    if ( indexed )
+                    {
+                        entity.setIndexedProperty( prop.getName(), value );
+                    }
+                    else
+                    {
+                        entity.setUnindexedProperty( prop.getName(), value );
+                    }
                 }
             }
         }

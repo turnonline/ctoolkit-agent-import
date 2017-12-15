@@ -19,7 +19,7 @@
 <changeset author="aurel.medvegy@ctoolkit.org" comment="Init data">
     <entities>
         <entity id="1" kind="State">
-            <property name="code" type="string" value="USA"/>
+            <property name="code" type="string" value="USA" indexed="true"/>
         </entity>
     </entities>
 </changeset>

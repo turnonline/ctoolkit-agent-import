@@ -73,6 +73,9 @@ public class ChangeSetEntityProperty
     @XmlAttribute( name = "value" )
     private String value;
 
+    @XmlAttribute( name = "indexed" )
+    private Boolean indexed;
+
     /**
      * Default constructor
      */
@@ -140,6 +143,16 @@ public class ChangeSetEntityProperty
     public void setValue( String value )
     {
         this.value = value;
+    }
+
+    public Boolean getIndexed()
+    {
+        return indexed;
+    }
+
+    public void setIndexed( Boolean indexed )
+    {
+        this.indexed = indexed;
     }
 
     @Override
