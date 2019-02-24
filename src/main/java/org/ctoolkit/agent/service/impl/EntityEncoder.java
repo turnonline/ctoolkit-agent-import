@@ -144,6 +144,17 @@ public class EntityEncoder
                 }
             }.resolve( value, multiplicity );
         }
+        else if ( ChangeSetEntityProperty.PROPERTY_TYPE_REFERENCE_NAME.equals( type ) )
+        {
+            return new ValueResolver()
+            {
+                @Override
+                Object toValue( String value )
+                {
+                    return parseKeyByName( value );
+                }
+            }.resolve( value, multiplicity );
+        }
 
         logger.error( "Unknown entity type '" + type + "'" );
         return null;
@@ -190,6 +201,39 @@ public class EntityEncoder
                 {
                     parentKey = KeyFactory.createKey( parentKey, kind, idName );
                 }
+            }
+        }
+
+        return parentKey;
+    }
+
+    /**
+     * Parse given string to Key first try as Long Id then if parsing fails as String name.
+     *
+     * @param stringKey the input string key to parse
+     * @return the parsed key
+     */
+    public Key parseKeyByName( String stringKey )
+    {
+        String[] split = stringKey.trim().split( "::" );
+
+        String kind;
+        String name;
+        Key parentKey = null;
+
+        for ( String s : split )
+        {
+            String[] spl = s.split( ":" );
+            kind = spl[0].trim();
+            name = spl[1].trim();
+
+            if ( parentKey == null )
+            {
+                parentKey = KeyFactory.createKey( kind, name );
+            }
+            else
+            {
+                parentKey = KeyFactory.createKey( parentKey, kind, name );
             }
         }
 

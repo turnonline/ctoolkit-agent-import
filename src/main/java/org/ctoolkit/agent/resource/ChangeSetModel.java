@@ -34,6 +34,8 @@ import java.util.List;
 public class ChangeSetModel
         implements Serializable
 {
+    private static final long serialVersionUID = 4287991446983301716L;
+
     /**
      * Optional Kind operations descriptors
      */

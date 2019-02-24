@@ -45,6 +45,8 @@ public class ChangeSetModelKindOp
 
     public final static String OP_CLEAN = "clean";
 
+    private static final long serialVersionUID = 6601241156513046986L;
+
     @XmlAttribute( name = "op" )
     private String op;
 

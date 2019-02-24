@@ -68,6 +68,8 @@ import java.util.List;
 public class ChangeSetEntity
         implements Serializable
 {
+    private static final long serialVersionUID = 5954520260345094853L;
+
     @XmlAttribute( name = "key" )
     private String key;
 

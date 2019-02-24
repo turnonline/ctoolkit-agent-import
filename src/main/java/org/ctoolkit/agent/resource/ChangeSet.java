@@ -35,6 +35,8 @@ import java.io.Serializable;
 public class ChangeSet
         implements Serializable
 {
+    private static final long serialVersionUID = 6313658858353310506L;
+
     @XmlAttribute( name = "author" )
     private String author;
 

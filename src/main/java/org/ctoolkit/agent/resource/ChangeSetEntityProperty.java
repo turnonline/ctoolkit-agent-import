@@ -57,9 +57,13 @@ public class ChangeSetEntityProperty
 
     public static final String PROPERTY_TYPE_REFERENCE = "reference";
 
+    public static final String PROPERTY_TYPE_REFERENCE_NAME = "reference-name";
+
     public static final String PROPERTY_MULTIPLICITY_SINGLE = "single";
 
     public static final String PROPERTY_MULTIPLICITY_LIST = "list";
+
+    private static final long serialVersionUID = -3754798492396641796L;
 
     @XmlAttribute( name = "name" )
     private String name;

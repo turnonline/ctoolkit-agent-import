@@ -34,6 +34,8 @@ import java.util.List;
 public class ChangeSetEntities
         implements Serializable
 {
+    private static final long serialVersionUID = 5663055815570996855L;
+
     @XmlElement( name = "entity" )
     private List<ChangeSetEntity> entity;
 
