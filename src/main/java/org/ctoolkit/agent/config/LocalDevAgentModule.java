@@ -34,6 +34,7 @@ import javax.inject.Singleton;
  * The local agent module dedicated solely for local development purpose.
  *
  * @author <a href="mailto:aurel.medvegy@ctoolkit.org">Aurel Medvegy</a>
+ * @see LocalAgentModule
  */
 public class LocalDevAgentModule
         extends AbstractModule
