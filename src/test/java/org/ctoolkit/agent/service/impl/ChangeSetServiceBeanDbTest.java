@@ -4,26 +4,31 @@ import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.google.guiceberry.junit4.GuiceBerryRule;
-import org.ctoolkit.agent.UseCaseEnvironment;
+import com.google.inject.servlet.ServletModule;
+import org.ctoolkit.agent.BackendServiceTestCase;
+import org.ctoolkit.agent.LocalAgentTestModule;
 import org.ctoolkit.agent.resource.Config;
 import org.ctoolkit.agent.service.ChangeSetService;
-import org.junit.Rule;
-import org.junit.Test;
+import org.testng.annotations.Guice;
+import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 
-import static org.junit.Assert.assertEquals;
+import static org.testng.Assert.assertEquals;
+
 
 /**
+ * {@link ChangeSetService} integration testing against local emulated datastore.
+ *
  * @author <a href="mailto:pohorelec@comvai.com">Jozef Pohorelec</a>
  */
-public class ChangeSetServiceBeanIT
-        extends UseCaseEnvironment
+@Guice( modules = {
+        ServletModule.class,
+        LocalAgentTestModule.class
+} )
+public class ChangeSetServiceBeanDbTest
+        extends BackendServiceTestCase
 {
-    @Rule
-    public final GuiceBerryRule guiceBerry = new GuiceBerryRule( UseCaseEnvironment.class );
-
     @Inject
     private ChangeSetService service;
 
@@ -34,12 +39,12 @@ public class ChangeSetServiceBeanIT
     {
         service.startImport( Config.getDefault() );
 
-        await( 1 );
+        awaitAndReset( 2000 );
 
         Entity country = datastoreService.get( KeyFactory.createKey( "Country", 1 ) );
-        assertEquals("EN", country.getProperty( "code" ));
+        assertEquals( country.getProperty( "code" ), "EN" );
 
         Entity state = datastoreService.get( KeyFactory.createKey( "State", 1 ) );
-        assertEquals("USA", state.getProperty( "code" ));
+        assertEquals( state.getProperty( "code" ), "USA" );
     }
 }

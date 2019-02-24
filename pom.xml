@@ -16,13 +16,13 @@
   ~ License along with this library; if not, write to the Free Software
   ~ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
   -->
-<!--TODO: move versions to props-->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
         <groupId>org.ctoolkit.maven</groupId>
         <artifactId>ctoolkit-public</artifactId>
-        <version>1</version>
+        <version>2</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -61,9 +61,9 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.17</version>
+                <version>${maven-surefire-plugin.version}</version>
                 <configuration>
-                    <argLine>-Xmx128m ${jmockit.setting}</argLine>
+                    <argLine>-Xmx256m ${jmockit.setting}</argLine>
                 </configuration>
             </plugin>
         </plugins>
@@ -126,30 +126,13 @@
             <groupId>org.jmockit</groupId>
             <artifactId>jmockit</artifactId>
             <version>${jmockit.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.ctoolkit.test</groupId>
-            <artifactId>ctoolkit-test</artifactId>
-            <version>1.2</version>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>6.14.3</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>cpsuite</groupId>
-            <artifactId>cpsuite</artifactId>
-            <version>1.2.6</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>xmlunit</groupId>
-            <artifactId>xmlunit</artifactId>
-            <scope>test</scope>
-            <version>${xmlunit.version}</version>
         </dependency>
     </dependencies>
 
@@ -159,44 +142,21 @@
             <dependency>
                 <groupId>org.ctoolkit.maven</groupId>
                 <artifactId>ctoolkit-library-bom</artifactId>
-                <version>${ctoolkit-library-bom.version}</version>
+                <version>10</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
 
-    <profiles>
-        <profile>
-            <id>jdk8</id>
-            <activation>
-                <jdk>1.8</jdk>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <configuration>
-                            <additionalparam>-Xdoclint:none</additionalparam>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
-
     <properties>
-        <ctoolkit-library-bom.version>4</ctoolkit-library-bom.version>
+        <appengine.version>1.9.69</appengine.version>
+        <maven-surefire-plugin.version>3.0.0-M3</maven-surefire-plugin.version>
         <!-- Overrides version from bom -->
-        <jmockit.version>1.18</jmockit.version>
+        <jmockit.version>1.41</jmockit.version>
         <!-- jmockit settings for OpenJDK otherwise throws 'IllegalStateException: To run on OpenJDK 64-Bit Server VM use -javaagent..' -->
         <jmockit.setting>
             -javaagent:${settings.localRepository}/org/jmockit/jmockit/${jmockit.version}/jmockit-${jmockit.version}.jar
         </jmockit.setting>
-        <xmlunit.version>1.6</xmlunit.version>
-        <guice.version>4.1.0</guice.version>
-        <junit.version>4.10</junit.version>
-        <appengine.version>1.9.52</appengine.version>
     </properties>
 </project>
