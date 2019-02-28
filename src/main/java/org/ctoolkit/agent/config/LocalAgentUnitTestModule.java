@@ -31,12 +31,12 @@ import org.ctoolkit.agent.service.impl.ImportTask;
 import javax.inject.Singleton;
 
 /**
- * The local agent module dedicated solely for local development purpose.
+ * The local agent module dedicated for unit testing purpose.
  *
  * @author <a href="mailto:aurel.medvegy@ctoolkit.org">Aurel Medvegy</a>
  * @see LocalAgentModule
  */
-public class LocalDevAgentModule
+public class LocalAgentUnitTestModule
         extends AbstractModule
 {
     @Override
