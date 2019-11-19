@@ -1,21 +1,21 @@
 package org.ctoolkit.agent.service.impl;
 
-import com.google.appengine.api.datastore.DatastoreService;
-import com.google.appengine.api.datastore.DatastoreServiceFactory;
-import com.google.appengine.api.datastore.Entity;
-import com.google.appengine.api.datastore.KeyFactory;
+import com.google.cloud.datastore.Datastore;
+import com.google.cloud.datastore.Entity;
+import com.google.cloud.datastore.KeyFactory;
+import com.google.cloud.datastore.testing.LocalDatastoreHelper;
 import com.google.inject.servlet.ServletModule;
 import org.ctoolkit.agent.BackendServiceTestCase;
-import org.ctoolkit.agent.LocalAgentTestModule;
+import org.ctoolkit.agent.TestModule;
 import org.ctoolkit.agent.resource.Config;
 import org.ctoolkit.agent.service.ChangeSetService;
+import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 
 import static org.testng.Assert.assertEquals;
-
 
 /**
  * {@link ChangeSetService} integration testing against local emulated datastore.
@@ -24,7 +24,7 @@ import static org.testng.Assert.assertEquals;
  */
 @Guice( modules = {
         ServletModule.class,
-        LocalAgentTestModule.class
+        TestModule.class
 } )
 public class ChangeSetServiceBeanDbTest
         extends BackendServiceTestCase
@@ -32,19 +32,33 @@ public class ChangeSetServiceBeanDbTest
     @Inject
     private ChangeSetService service;
 
-    private DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
+    @Inject
+    private Datastore datastore;
+
+    @Inject
+    private LocalDatastoreHelper helper;
+
+    @BeforeSuite
+    public void initHelper()
+    {
+        super.lDatastoreHelper = helper;
+    }
 
     @Test
-    public void startImport() throws Exception
+    public void startImport()
     {
+
         service.startImport( Config.getDefault() );
 
         awaitAndReset( 2000 );
 
-        Entity country = datastoreService.get( KeyFactory.createKey( "Country", 1 ) );
-        assertEquals( country.getProperty( "code" ), "EN" );
+        KeyFactory factory = datastore.newKeyFactory();
 
-        Entity state = datastoreService.get( KeyFactory.createKey( "State", 1 ) );
-        assertEquals( state.getProperty( "code" ), "USA" );
+        Entity country = datastore.get( factory.setKind( "Country" ).newKey( 1 ) );
+        assertEquals( country.getString( "code" ), "EN" );
+
+        factory.reset();
+        Entity state = datastore.get( factory.setKind( "State" ).newKey( 1 ) );
+        assertEquals( state.getString( "code" ), "USA" );
     }
 }

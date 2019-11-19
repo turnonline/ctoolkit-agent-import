@@ -18,10 +18,9 @@
 
 package org.ctoolkit.agent.service.impl;
 
-import com.google.appengine.api.datastore.DatastoreService;
-import com.google.appengine.api.datastore.DatastoreServiceFactory;
-import com.google.appengine.api.datastore.Entity;
-import com.google.appengine.api.datastore.Key;
+import com.google.cloud.datastore.Datastore;
+import com.google.cloud.datastore.FullEntity;
+import com.google.cloud.datastore.Key;
 import com.google.inject.Inject;
 import org.ctoolkit.agent.service.EntityPool;
 import org.slf4j.Logger;
@@ -49,7 +48,7 @@ public class EntityPoolThreadLocal
     /**
      * The datastore service to work on
      */
-    private final DatastoreService ds;
+    private final Datastore ds;
 
     /**
      * The max items to put into entity lists before flushing them into data store
@@ -59,7 +58,7 @@ public class EntityPoolThreadLocal
     /**
      * The list of holding entities waiting for putting them into data store
      */
-    private final List<Entity> toPut = new ArrayList<>();
+    private final List<FullEntity> toPut = new ArrayList<>();
 
     /**
      * The list of holding entities waiting for deleting them from data store
@@ -70,19 +69,19 @@ public class EntityPoolThreadLocal
      * The default constructor
      */
     @Inject
-    public EntityPoolThreadLocal()
+    public EntityPoolThreadLocal( Datastore ds )
     {
-        this( DatastoreServiceFactory.getDatastoreService(), DEFAULT_COUNT_LIMIT );
+        this( ds, DEFAULT_COUNT_LIMIT );
     }
 
-    private EntityPoolThreadLocal( DatastoreService ds, int maxItems )
+    private EntityPoolThreadLocal( Datastore ds, int maxItems )
     {
         logger.info( "Building entity pool for " + maxItems + " entries" );
         this.ds = ds;
         this.maxItems = maxItems;
     }
 
-    public void put( Entity ent )
+    public void put( FullEntity ent )
     {
         logger.info( "Adding entity into the put-pool" );
         if ( toPut.size() >= maxItems )
@@ -125,14 +124,14 @@ public class EntityPoolThreadLocal
     private void flushPuts()
     {
         logger.info( "Flushing the put-pool (" + toPut.size() + " items)" );
-        ds.put( toPut );
+        ds.put( toPut.toArray( new FullEntity[0] ) );
         toPut.clear();
     }
 
     private void flushDeletes()
     {
         logger.info( "Flushing the delete-pool (" + toDelete.size() + " items)" );
-        ds.delete( toDelete );
+        ds.delete( toDelete.toArray( new Key[0] ) );
         toDelete.clear();
     }
 

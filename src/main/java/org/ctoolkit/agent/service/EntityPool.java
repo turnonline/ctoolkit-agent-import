@@ -18,15 +18,15 @@
 
 package org.ctoolkit.agent.service;
 
-import com.google.appengine.api.datastore.Entity;
-import com.google.appengine.api.datastore.Key;
+import com.google.cloud.datastore.FullEntity;
+import com.google.cloud.datastore.Key;
 
 /**
  * @author <a href="mailto:pohorelec@comvai.com">Jozef Pohorelec</a>
  */
 public interface EntityPool
 {
-    void put( Entity ent );
+    void put( FullEntity ent );
 
     void delete( Key key );
 

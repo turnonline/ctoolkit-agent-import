@@ -18,9 +18,15 @@
 
 package org.ctoolkit.agent.service.impl;
 
-import com.google.appengine.api.datastore.Entity;
-import com.google.appengine.api.datastore.Key;
-import com.google.appengine.api.datastore.KeyFactory;
+import com.google.cloud.datastore.Datastore;
+import com.google.cloud.datastore.Entity;
+import com.google.cloud.datastore.FullEntity;
+import com.google.cloud.datastore.IncompleteKey;
+import com.google.cloud.datastore.Key;
+import com.google.cloud.datastore.KeyFactory;
+import com.google.cloud.datastore.KeyValue;
+import com.google.cloud.datastore.PathElement;
+import com.google.cloud.datastore.Value;
 import org.ctoolkit.agent.resource.ChangeSetEntity;
 import org.ctoolkit.agent.resource.ChangeSetEntityProperty;
 import org.slf4j.Logger;
@@ -37,15 +43,18 @@ public class ChangeSetEntityToEntityMapper
 {
     private final EntityEncoder encoder;
 
+    private final Datastore datastore;
+
     private Logger logger = LoggerFactory.getLogger( ChangeSetEntityToEntityMapper.class );
 
     @Inject
-    public ChangeSetEntityToEntityMapper( EntityEncoder encoder )
+    public ChangeSetEntityToEntityMapper( EntityEncoder encoder, Datastore datastore )
     {
         this.encoder = encoder;
+        this.datastore = datastore;
     }
 
-    public Entity map( ChangeSetEntity changeSetEntity )
+    FullEntity map( ChangeSetEntity changeSetEntity )
     {
         // the kind has to be specified
         if ( changeSetEntity.getKind() == null )
@@ -54,7 +63,7 @@ public class ChangeSetEntityToEntityMapper
             return null;
         }
 
-        Entity entity = create( changeSetEntity );
+        FullEntity.Builder<?> builder = create( changeSetEntity );
 
         // changeSetEntity up the properties
         if ( changeSetEntity.hasProperties() )
@@ -62,90 +71,62 @@ public class ChangeSetEntityToEntityMapper
             for ( ChangeSetEntityProperty prop : changeSetEntity.getProperty() )
             {
                 Boolean indexed = prop.getIndexed();
-                Object value = encoder.decodeProperty( prop.getType(), prop.getMultiplicity(), prop.getValue() );
+                Value<?> value = encoder.decodeProperty(
+                        prop.getType(),
+                        prop.getMultiplicity(),
+                        prop.getValue(),
+                        indexed );
 
-                if ( indexed == null )
-                {
-                    entity.setProperty( prop.getName(), value );
-                }
-                else
-                {
-                    if ( indexed )
-                    {
-                        entity.setIndexedProperty( prop.getName(), value );
-                    }
-                    else
-                    {
-                        entity.setUnindexedProperty( prop.getName(), value );
-                    }
-                }
+                builder.set( prop.getName(), value );
             }
         }
 
-        return entity;
+        return builder.build();
     }
 
-    public Entity create( ChangeSetEntity changeSetEntity )
+    private FullEntity.Builder<IncompleteKey> create( ChangeSetEntity changeSetEntity )
     {
-        Entity entity;
-
-        // generate parent key
-        Key parentKey = null;
+        FullEntity.Builder<IncompleteKey> entity;
+        KeyFactory factory = datastore.newKeyFactory();
 
         // parentEntityId has top priority
         if ( changeSetEntity.getParentKey() != null )
         {
-            parentKey = encoder.parseKeyByIdOrName( changeSetEntity.getParentKey() );
-            // parent kind/id
+            KeyValue keyValue = encoder.parseKeyByIdOrName( changeSetEntity.getParentKey() );
+            if ( keyValue != null )
+            {
+                factory.addAncestors( keyValue.get().getAncestors() );
+            }
         }
         else if ( changeSetEntity.getParentId() != null && changeSetEntity.getParentKind() != null )
         {
-            parentKey = KeyFactory.createKey( changeSetEntity.getParentKind(), changeSetEntity.getParentId() );
+            factory.addAncestor( PathElement.of( changeSetEntity.getParentKind(), changeSetEntity.getParentId() ) );
             // parent kind/name has the lowest priority in the reference chain
         }
         else if ( changeSetEntity.getParentName() != null && changeSetEntity.getParentKind() != null )
         {
-            parentKey = KeyFactory.createKey( changeSetEntity.getParentKind(), changeSetEntity.getParentName() );
+            factory.addAncestor( PathElement.of( changeSetEntity.getParentKind(), changeSetEntity.getParentName() ) );
         }
 
         // generate the entity
-
-        // look for a key property
         if ( changeSetEntity.getKey() != null )
         {
-            // ignore parent key, because it has to be composed within the entity key
-            entity = new Entity( KeyFactory.stringToKey( changeSetEntity.getKey() ) );
+            throw new UnsupportedOperationException( "ChangeSetEntity.key is unsupported" );
         }
         else if ( changeSetEntity.getId() != null )
         {
-            // check if there is id changeSetEntity
-            // look for parent kind/id
-            if ( parentKey != null )
-            {
-                // build the entity key
-                Key key = new KeyFactory.Builder( parentKey ).addChild( changeSetEntity.getKind(), changeSetEntity.getId() ).getKey();
-                entity = new Entity( key );
-            }
-            else
-            {
-                entity = new Entity( KeyFactory.createKey( changeSetEntity.getKind(), changeSetEntity.getId() ) );
-            }
+            Key key = factory.setKind( changeSetEntity.getKind() ).newKey( changeSetEntity.getId() );
+            entity = FullEntity.newBuilder( key );
         }
         else if ( changeSetEntity.getName() != null )
         {
-            // build the entity key
-            if ( parentKey != null )
-            {
-                entity = new Entity( changeSetEntity.getKind(), changeSetEntity.getName(), parentKey );
-            }
-            else
-            {
-                entity = new Entity( changeSetEntity.getKind(), changeSetEntity.getName() );
-            }
+            Key key = factory.setKind( changeSetEntity.getKind() ).newKey( changeSetEntity.getName() );
+            entity = FullEntity.newBuilder( key );
         }
         else
         {
-            entity = new Entity( changeSetEntity.getKind() );
+            IncompleteKey key = factory.setKind( changeSetEntity.getKind() ).newKey();
+            entity = FullEntity.newBuilder( key );
         }
 
         return entity;

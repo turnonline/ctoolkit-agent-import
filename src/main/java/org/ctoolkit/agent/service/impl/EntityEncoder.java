@@ -18,18 +18,30 @@
 
 package org.ctoolkit.agent.service.impl;
 
-import com.google.appengine.api.datastore.Blob;
-import com.google.appengine.api.datastore.Key;
-import com.google.appengine.api.datastore.KeyFactory;
-import com.google.appengine.api.datastore.Text;
-import com.google.appengine.repackaged.com.google.api.client.util.Base64;
+import com.google.api.client.util.Base64;
+import com.google.cloud.Timestamp;
+import com.google.cloud.datastore.Blob;
+import com.google.cloud.datastore.BlobValue;
+import com.google.cloud.datastore.BooleanValue;
+import com.google.cloud.datastore.Datastore;
+import com.google.cloud.datastore.DoubleValue;
+import com.google.cloud.datastore.Key;
+import com.google.cloud.datastore.KeyFactory;
+import com.google.cloud.datastore.KeyValue;
+import com.google.cloud.datastore.ListValue;
+import com.google.cloud.datastore.LongValue;
+import com.google.cloud.datastore.PathElement;
+import com.google.cloud.datastore.StringValue;
+import com.google.cloud.datastore.TimestampValue;
+import com.google.cloud.datastore.Value;
+import com.google.common.base.Splitter;
 import org.ctoolkit.agent.resource.ChangeSetEntityProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
+import javax.inject.Inject;
 import java.util.Date;
-import java.util.List;
+import java.util.Iterator;
 
 /**
  * Datastore entity encoder
@@ -40,6 +52,14 @@ public class EntityEncoder
 {
     private static final Logger logger = LoggerFactory.getLogger( EntityEncoder.class );
 
+    private final Datastore datastore;
+
+    @Inject
+    public EntityEncoder( Datastore datastore )
+    {
+        this.datastore = datastore;
+    }
+
     /**
      * Transforms a type and a string value to real object with given type and value.
      *
@@ -48,25 +68,26 @@ public class EntityEncoder
      * @param value        the string represented value of the property
      * @return ChangeSetEntityProperty representation of the property
      */
-    public Object decodeProperty( String type, String multiplicity, String value )
+    Value<?> decodeProperty( String type, String multiplicity, String value, Boolean indexed )
     {
         if ( value == null )
         {
             return null;
         }
+
+        boolean exclude = indexed == null || !indexed;
+
         if ( ChangeSetEntityProperty.PROPERTY_TYPE_STRING.equals( type ) )
         {
             return new ValueResolver()
             {
                 @Override
-                Object toValue( String value )
+                Value<?> toValue( String value )
                 {
-                    // if string is bigger than 1500 bytes create Text object instead
-                    if ( value.getBytes().length > 1500 )
-                    {
-                        return new Text( value );
-                    }
-                    return value;
+                    return StringValue
+                            .newBuilder( value )
+                            .setExcludeFromIndexes( exclude )
+                            .build();
                 }
             }.resolve( value, multiplicity );
         }
@@ -75,9 +96,12 @@ public class EntityEncoder
             return new ValueResolver()
             {
                 @Override
-                Object toValue( String value )
+                Value<?> toValue( String value )
                 {
-                    return Double.valueOf( value );
+                    return DoubleValue
+                            .newBuilder( Double.parseDouble( value ) )
+                            .setExcludeFromIndexes( exclude )
+                            .build();
                 }
             }.resolve( value, multiplicity );
         }
@@ -86,9 +110,12 @@ public class EntityEncoder
             return new ValueResolver()
             {
                 @Override
-                Object toValue( String value )
+                Value<?> toValue( String value )
                 {
-                    return Long.valueOf( value );
+                    return LongValue
+                            .newBuilder( Long.parseLong( value ) )
+                            .setExcludeFromIndexes( exclude )
+                            .build();
                 }
             }.resolve( value, multiplicity );
         }
@@ -97,9 +124,12 @@ public class EntityEncoder
             return new ValueResolver()
             {
                 @Override
-                Object toValue( String value )
+                Value<?> toValue( String value )
                 {
-                    return Boolean.valueOf( value );
+                    return BooleanValue
+                            .newBuilder( Boolean.parseBoolean( value ) )
+                            .setExcludeFromIndexes( exclude )
+                            .build();
                 }
             }.resolve( value, multiplicity );
         }
@@ -108,9 +138,12 @@ public class EntityEncoder
             return new ValueResolver()
             {
                 @Override
-                Object toValue( String value )
+                Value<?> toValue( String value )
                 {
-                    return new Date( Long.valueOf( value ) );
+                    return TimestampValue
+                            .newBuilder( Timestamp.of( new Date( Long.parseLong( value ) ) ) )
+                            .setExcludeFromIndexes( exclude )
+                            .build();
                 }
             }.resolve( value, multiplicity );
         }
@@ -119,11 +152,14 @@ public class EntityEncoder
             return new ValueResolver()
             {
                 @Override
-                Object toValue( String value )
+                Value<?> toValue( String value )
                 {
                     try
                     {
-                        return new Blob( Base64.decodeBase64( value ) );
+                        return BlobValue
+                                .newBuilder( Blob.copyFrom( Base64.decodeBase64( value ) ) )
+                                .setExcludeFromIndexes( exclude )
+                                .build();
                     }
                     catch ( Exception e )
                     {
@@ -138,7 +174,7 @@ public class EntityEncoder
             return new ValueResolver()
             {
                 @Override
-                Object toValue( String value )
+                Value<?> toValue( String value )
                 {
                     return parseKeyByIdOrName( value );
                 }
@@ -149,7 +185,7 @@ public class EntityEncoder
             return new ValueResolver()
             {
                 @Override
-                Object toValue( String value )
+                Value<?> toValue( String value )
                 {
                     return parseKeyByName( value );
                 }
@@ -166,45 +202,48 @@ public class EntityEncoder
      * @param stringKey the input string key to parse
      * @return the parsed key
      */
-    public Key parseKeyByIdOrName( String stringKey )
+    KeyValue parseKeyByIdOrName( String stringKey )
     {
-        String[] split = stringKey.trim().split( "::" );
+        Iterator<String> keys = Splitter.on( "::" ).trimResults().split( stringKey ).iterator();
 
         String kind;
         String idName;
-        Key parentKey = null;
+        Key key = null;
+        KeyFactory factory = datastore.newKeyFactory();
 
-        for ( String s : split )
+        while ( keys.hasNext() )
         {
-            String[] spl = s.split( ":" );
+            String singleKey = keys.next();
+            String[] spl = singleKey.split( ":" );
             kind = spl[0].trim();
             idName = spl[1].trim();
 
-            if ( parentKey == null )
+            if ( keys.hasNext() )
             {
                 try
                 {
-                    parentKey = KeyFactory.createKey( kind, Long.parseLong( idName ) );
+                    factory.addAncestor( PathElement.of( kind, Long.parseLong( idName ) ) );
                 }
                 catch ( NumberFormatException e )
                 {
-                    parentKey = KeyFactory.createKey( kind, idName );
+                    factory.addAncestor( PathElement.of( kind, idName ) );
                 }
             }
             else
             {
+                factory.setKind( kind );
                 try
                 {
-                    parentKey = KeyFactory.createKey( parentKey, kind, Long.parseLong( idName ) );
+                    key = factory.newKey( Long.parseLong( idName ) );
                 }
                 catch ( NumberFormatException e )
                 {
-                    parentKey = KeyFactory.createKey( parentKey, kind, idName );
+                    key = factory.newKey( idName );
                 }
             }
         }
 
-        return parentKey;
+        return key == null ? null : KeyValue.of( key );
     }
 
     /**
@@ -213,47 +252,50 @@ public class EntityEncoder
      * @param stringKey the input string key to parse
      * @return the parsed key
      */
-    public Key parseKeyByName( String stringKey )
+    private KeyValue parseKeyByName( String stringKey )
     {
-        String[] split = stringKey.trim().split( "::" );
+        Iterator<String> keys = Splitter.on( "::" ).trimResults().split( stringKey ).iterator();
 
         String kind;
         String name;
-        Key parentKey = null;
+        Key key = null;
+        KeyFactory factory = datastore.newKeyFactory();
 
-        for ( String s : split )
+        while ( keys.hasNext() )
         {
-            String[] spl = s.split( ":" );
+            String singleKey = keys.next();
+            String[] spl = singleKey.split( ":" );
             kind = spl[0].trim();
             name = spl[1].trim();
 
-            if ( parentKey == null )
+            if ( keys.hasNext() )
             {
-                parentKey = KeyFactory.createKey( kind, name );
+                factory.addAncestor( PathElement.of( kind, name ) );
             }
             else
             {
-                parentKey = KeyFactory.createKey( parentKey, kind, name );
+                factory.setKind( kind );
+                key = factory.newKey( name );
             }
         }
 
-        return parentKey;
+        return key == null ? null : KeyValue.of( key );
     }
 
     private static abstract class ValueResolver
     {
-        Object resolve( String value, String multiplicity )
+        Value<?> resolve( String value, String multiplicity )
         {
             if ( multiplicity != null && multiplicity.equals( ChangeSetEntityProperty.PROPERTY_MULTIPLICITY_LIST ) )
             {
-                List<Object> list = new ArrayList<>();
+                ListValue.Builder builder = ListValue.newBuilder();
 
                 for ( String splitValue : value.split( "," ) )
                 {
-                    list.add( toValue( splitValue ) );
+                    builder.addValue( toValue( splitValue ) );
                 }
 
-                return list;
+                return builder.build();
             }
             else
             {
@@ -261,6 +303,6 @@ public class EntityEncoder
             }
         }
 
-        abstract Object toValue( String value );
+        abstract Value<?> toValue( String value );
     }
 }

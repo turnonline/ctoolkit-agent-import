@@ -18,20 +18,18 @@
 
 package org.ctoolkit.agent.service.impl;
 
-import com.google.appengine.api.datastore.DatastoreService;
-import com.google.appengine.api.datastore.DatastoreServiceFactory;
-import com.google.appengine.api.datastore.Entity;
-import com.google.appengine.api.datastore.PreparedQuery;
-import com.google.appengine.api.datastore.Query;
+import com.google.cloud.datastore.Datastore;
+import com.google.cloud.datastore.FullEntity;
+import com.google.cloud.datastore.Key;
+import com.google.cloud.datastore.KeyQuery;
+import com.google.cloud.datastore.Query;
+import com.google.cloud.datastore.QueryResults;
 import org.ctoolkit.agent.resource.ChangeSetEntity;
 import org.ctoolkit.agent.service.DataAccess;
 import org.ctoolkit.agent.service.EntityPool;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
-import java.util.List;
-
-import static com.google.appengine.api.datastore.FetchOptions.Builder.withLimit;
 
 /**
  * GAE datastore implementation of {@link DataAccess}
@@ -43,17 +41,18 @@ public class DataAccessBean
 {
     private static final int DEFAULT_COUNT_LIMIT = 100;
 
-    private final DatastoreService datastore;
+    private final Datastore datastore;
 
     private final Provider<EntityPool> pool;
 
     private final ChangeSetEntityToEntityMapper changeSetEntityToEntityMapper;
 
     @Inject
-    protected DataAccessBean( Provider<EntityPool> pool,
+    protected DataAccessBean( Datastore datastore,
+                              Provider<EntityPool> pool,
                               ChangeSetEntityToEntityMapper changeSetEntityToEntityMapper )
     {
-        this.datastore = DatastoreServiceFactory.getDatastoreService();
+        this.datastore = datastore;
         this.pool = pool;
         this.changeSetEntityToEntityMapper = changeSetEntityToEntityMapper;
     }
@@ -61,7 +60,7 @@ public class DataAccessBean
     @Override
     public void addEntity( ChangeSetEntity csEntity )
     {
-        Entity entity = changeSetEntityToEntityMapper.map( csEntity );
+        FullEntity entity = changeSetEntityToEntityMapper.map( csEntity );
         pool.get().put( entity );
     }
 
@@ -76,17 +75,17 @@ public class DataAccessBean
     {
         while ( true )
         {
-            Query query = new Query( kind ).setKeysOnly();
-            PreparedQuery preparedQuery = datastore.prepare( query );
-            List<Entity> entList = preparedQuery.asList( withLimit( DEFAULT_COUNT_LIMIT ) );
-            if ( !entList.isEmpty() )
+            KeyQuery query = Query.newKeyQueryBuilder().setKind( kind ).setLimit( DEFAULT_COUNT_LIMIT ).build();
+            QueryResults<Key> result = datastore.run( query );
+            if ( result.hasNext() )
             {
-                for ( Entity entity : entList )
+                int numberOf = 0;
+                for ( ; result.hasNext(); numberOf++ )
                 {
-                    pool.get().delete( entity.getKey() );
+                    pool.get().delete( result.next() );
                 }
 
-                if ( entList.size() < DEFAULT_COUNT_LIMIT )
+                if ( numberOf < DEFAULT_COUNT_LIMIT )
                 {
                     pool.get().flush();
                 }

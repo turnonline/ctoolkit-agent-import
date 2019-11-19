@@ -18,7 +18,10 @@
 
 package org.ctoolkit.agent;
 
+import com.google.cloud.datastore.Datastore;
+import com.google.cloud.datastore.testing.LocalDatastoreHelper;
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import org.ctoolkit.agent.service.ChangeSetService;
 import org.ctoolkit.agent.service.DataAccess;
 import org.ctoolkit.agent.service.EntityPool;
@@ -38,7 +41,7 @@ import javax.inject.Singleton;
  *
  * @author <a href="mailto:aurel.medvegy@ctoolkit.org">Aurel Medvegy</a>
  */
-public class LocalAgentTestModule
+public class TestModule
         extends AbstractModule
 {
     @Override
@@ -51,5 +54,19 @@ public class LocalAgentTestModule
         bind( ChangeSetService.class ).to( ChangeSetServiceBean.class ).in( Singleton.class );
 
         requestStaticInjection( ImportTask.class );
+    }
+
+    @Provides
+    @Singleton
+    Datastore providesDatastore( LocalDatastoreHelper helper )
+    {
+        return helper.getOptions().getService();
+    }
+
+    @Provides
+    @Singleton
+    LocalDatastoreHelper providesLocalDatastoreHelper()
+    {
+        return LocalDatastoreHelper.create( 1.0 );
     }
 }
