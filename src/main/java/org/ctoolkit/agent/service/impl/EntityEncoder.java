@@ -30,6 +30,7 @@ import com.google.cloud.datastore.KeyFactory;
 import com.google.cloud.datastore.KeyValue;
 import com.google.cloud.datastore.ListValue;
 import com.google.cloud.datastore.LongValue;
+import com.google.cloud.datastore.NullValue;
 import com.google.cloud.datastore.PathElement;
 import com.google.cloud.datastore.StringValue;
 import com.google.cloud.datastore.TimestampValue;
@@ -72,7 +73,7 @@ public class EntityEncoder
     {
         if ( value == null )
         {
-            return null;
+            return NullValue.of();
         }
 
         boolean exclude = indexed == null || !indexed;
@@ -192,8 +193,19 @@ public class EntityEncoder
             }.resolve( value, multiplicity );
         }
 
-        logger.error( "Unknown entity type '" + type + "'" );
-        return null;
+        logger.error( "Unknown entity type '" + type + "' value: '" + value + "' will be treated as a string." );
+
+        return new ValueResolver()
+        {
+            @Override
+            Value<?> toValue( String value )
+            {
+                return StringValue
+                        .newBuilder( value )
+                        .setExcludeFromIndexes( exclude )
+                        .build();
+            }
+        }.resolve( value, multiplicity );
     }
 
     /**
