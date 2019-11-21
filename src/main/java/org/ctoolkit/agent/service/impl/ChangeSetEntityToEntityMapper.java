@@ -95,7 +95,21 @@ public class ChangeSetEntityToEntityMapper
             KeyValue keyValue = encoder.parseKeyByIdOrName( changeSetEntity.getParentKey() );
             if ( keyValue != null )
             {
-                factory.addAncestors( keyValue.get().getAncestors() );
+                Key key = keyValue.get();
+                factory.addAncestors( key.getAncestors() );
+
+                if ( key.hasId() )
+                {
+                    factory.addAncestor( PathElement.of( key.getKind(), key.getId() ) );
+                }
+                else if ( key.hasName() )
+                {
+                    factory.addAncestor( PathElement.of( key.getKind(), key.getName() ) );
+                }
+                else
+                {
+                    logger.error( "Invalid key value, missing ID or Name: " + keyValue );
+                }
             }
         }
         else if ( changeSetEntity.getParentId() != null && changeSetEntity.getParentKind() != null )
