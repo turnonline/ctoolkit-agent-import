@@ -1,5 +1,5 @@
 # Ctoolkit Agent import - library for importing DB in local development
-Cloud Toolkit Import Agent is library for development purposes. It allows you to import data into local Google App engine datastore.
+Cloud Toolkit Import Agent is library for development purposes. It allows you to import data into local emulated Google Cloud Datastore.
 
 ## Usage
 ### Add dependency to your maven pom file. 
